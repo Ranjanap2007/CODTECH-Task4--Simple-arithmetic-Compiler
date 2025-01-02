@@ -1,0 +1,109 @@
+#include <iostream>
+#include <cctype>
+#include <string>
+#include <sstream>
+
+using namespace std;
+
+class SimpleCompiler {
+public:
+    SimpleCompiler(const string& expression) : expression(expression), pos(0) {}
+
+    int evaluate() {
+        int result = parseExpression();
+        if (pos < expression.size()) {
+            throw runtime_error("Unexpected character after expression.");
+        }
+        return result;
+    }
+
+private:
+    string expression;
+    size_t pos;
+
+    // Parse an expression (handles addition and subtraction)
+    int parseExpression() {
+        int result = parseTerm();
+        while (pos < expression.size() && (expression[pos] == '+' || expression[pos] == '-')) {
+            char op = expression[pos++];
+            int term = parseTerm();
+            if (op == '+') {
+                result += term;
+            } else {
+                result -= term;
+            }
+        }
+        return result;
+    }
+
+    // Parse a term (handles multiplication and division)
+    int parseTerm() {
+        int result = parseFactor();
+        while (pos < expression.size() && (expression[pos] == '*' || expression[pos] == '/')) {
+            char op = expression[pos++];
+            int factor = parseFactor();
+            if (op == '*') {
+                result *= factor;
+            } else {
+                result /= factor;
+            }
+        }
+        return result;
+    }
+
+    // Parse a factor (handles numbers and parentheses)
+    int parseFactor() {
+        skipWhitespace();
+        if (pos < expression.size() && expression[pos] == '(') {
+            pos++;  // Skip '('
+            int result = parseExpression();
+            skipWhitespace();
+            if (pos < expression.size() && expression[pos] == ')') {
+                pos++;  // Skip ')'
+            } else {
+                throw runtime_error("Expected closing parenthesis.");
+            }
+            return result;
+        } else if (pos < expression.size() && isdigit(expression[pos])) {
+            return parseNumber();
+        } else {
+            throw runtime_error("Unexpected character.");
+        }
+    }
+
+    // Parse an integer number
+    int parseNumber() {
+        skipWhitespace();
+        string numberStr;
+        while (pos < expression.size() && isdigit(expression[pos])) {
+            numberStr.push_back(expression[pos++]);
+        }
+        if (numberStr.empty()) {
+            throw runtime_error("Expected number.");
+        }
+        return stoi(numberStr);
+    }
+
+    // Skip any whitespace characters
+    void skipWhitespace() {
+        while (pos < expression.size() && isspace(expression[pos])) {
+            pos++;
+        }
+    }
+};
+
+int main() {
+    string expression;
+    cout << "Enter an arithmetic expression: ";
+    getline(cin, expression);
+
+    try {
+        SimpleCompiler compiler(expression);
+        int result = compiler.evaluate();
+        cout << "Result: " << result << endl;
+    } catch (const runtime_error& e) {
+        cout << "Error: " << e.what() << endl;
+    }
+
+    return 0;
+}
